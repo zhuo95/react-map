@@ -52,11 +52,43 @@ class Map extends Component {
                     lng: position.coords.longitude
                 }
             }, () => {
-                this.initMap();
+                this.initCurrentTime();
+                // this.initMap();
                 this.searchPlace();
             });
         });
   
+    }
+
+    initCurrentTime = () => {
+        const currentTime = new Date();
+        const currentHour = currentTime.getHours() + 4;
+        const currentMin = currentTime.getMinutes();
+
+        axios.get(`https://api.sunrise-sunset.org/json?lat=${this.state.currentCenter.lat}&lng=${this.state.currentCenter.lng}&date=today&formatted=0`,
+            {withCredentials: false}
+        )
+        .then(res => {
+            console.log("sunrise-sunset", res.data);
+            if(res.data.status === "OK") {
+                const sunrise = res.data.results.sunrise;
+                const sunset = res.data.results.sunset;
+
+                //Night Mode
+                if(currentHour < sunrise.substring(11, 13) 
+                    || currentHour > sunset.substring(11, 13)
+                    || currentHour === sunrise.substring(11, 13) && currentMin < sunrise.substring(14, 16)
+                    || currentHour === sunset.substring(11, 13) && currentMin > sunset.substring(14, 16)) {
+
+                    this.mapStyleRef.current.checked = true;
+                } 
+
+                this.initMap();
+
+            } else {
+                alert(res.data.msg);
+            }
+        })
     }
 
     initMap = () => {
@@ -457,7 +489,7 @@ class Map extends Component {
         this.setState({userEvent: userEvent});
     }
 
-    mapStyleChange = (event) => {
+    handleMapStyleChange = (event) => {
         const nightModeMap = event.currentTarget.checked;
 
         this.state.map.mapTypes.set('day_map', this.state.dayMapType);
@@ -499,7 +531,7 @@ class Map extends Component {
                         <a className="navItem">
                            <i className="fas fa-moon moon"></i>
                            <label className="switch">
-                              <input ref={this.mapStyleRef} onChange={this.mapStyleChange} type="checkbox" />
+                              <input ref={this.mapStyleRef} onChange={this.handleMapStyleChange} type="checkbox" />
                               <span className="slider round"></span>
                            </label>
                         </a>
